@@ -7,19 +7,16 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include <opencv2/opencv.hpp>
 #include <opencv/highgui.h>
 #include <opencv2/imgcodecs.hpp>
 #include <vector>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/fstream.hpp>
-#include <boost/timer.hpp>
 #include <numeric>
 #include "Eigen/Dense"
 #include <typeinfo>
 #include <cmath>
-
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
@@ -62,7 +59,6 @@ class Calibration
 public:
     Calibration(string inputpath);
     void calibration();
-    inline void pm(int i);
     void transformcamtopro();
     cv::Mat rotationMatrix2cossin(cv::Mat R);
     cv::Mat cossin2rotationMatrix(cv::Mat cossin);

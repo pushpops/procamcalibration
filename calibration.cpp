@@ -1,13 +1,4 @@
 #include <calibration.h>
-#include <QString>
-#include <QFileDialog>
-#include <QDebug>
-#include <QImage>
-#include <QGraphicsView>
-#include <QLabel>
-#include <QSettings>
-#include <QSignalMapper>
-#include <QStandardPaths>
 
 using namespace std;
 namespace fs = boost::filesystem;
@@ -54,7 +45,6 @@ Calibration::Calibration(string inputpath)
     }
 
 }
-
 
 void Calibration::calibration()
 {
@@ -200,14 +190,6 @@ void Calibration::calibration()
     //-------------------------------
     //  座標系変換
     //-------------------------------
-    //WCSの印刷画像について，WCSからICSに投影して画像上の点と一致するか確かめる
-//    for (i=0;i<imgnum;i++)
-//    {
-//        for(j=0;j<PAT_SIZE;j++)
-//        {
-//            zc[i].push_back(cameraparam.tvecs[i].at<double>(0,2));
-//        }
-//    }
 
     string ccspath;
     string icspath;
@@ -216,31 +198,12 @@ void Calibration::calibration()
     icspath = inputpath+"/calib_output/board/3Dto2DCam/ICSboardUndist";
     ccspath = inputpath+"/calib_output/board/3Dto2DCam/CCSboard";
     vector<vector<cv::Point2f>> reprojectedIcs = transformWcs2Ics(capturedBoard.wcspoints, &cameraparam, icspath, ccspath);
-    //    vector<vector<cv::Point2f>> reprojectedIcs;
-    //    vector<cv::Point2f> points;
-    //    for(i=0; i<imgnum; i++){
-    //        cv::projectPoints(object,cameraparam.rvecs[i],cameraparam.tvecs[i],cameraparam.cam_mat,cameraparam.dist_coefs, points);
-    //        reprojectedIcs.push_back(points);
-    //    }
-
-    //変換がうまくいっているか確認用
-//    cout << "drawPoint... go \"plot\" window and push any key" << endl;
-//    drawPoint(inputpath+"/calib_output/board/board",
-//              inputpath+"/calib_output/board/3Dto2DCam/ICSUndist",
-//              capturedBoard.undistpoints,
-//              RED
-//              );
-//    drawPoint(inputpath+"/calib_output/board/3Dto2DCam/ICSUndist",
-//              inputpath+"/calib_output/board/3Dto2DCam/ICSUndist",
-//              reprojectedIcs,
-//              YELLOW
-//              );
 
     //画像に写った印刷画像の点についてICSからWCSに変換して平面板の物体座標と一致するか確かめる．
-    wcspath = "/Users/"+username+"/Desktop/calib_output/board/2DCamto3D/WCSboard";
-    ccspath = "/Users/"+username+"/Desktop/calib_output/board/2DCamto3D/CCSboard";
-    transformIcs2Wcs(capturedBoard.undistpoints,&cameraparam,wcspath,ccspath);
-    //-----------------------------------------------------------
+    // wcspath = "/Users/"+username+"/Desktop/calib_output/board/2DCamto3D/WCSboard";
+    // ccspath = "/Users/"+username+"/Desktop/calib_output/board/2DCamto3D/CCSboard";
+    // transformIcs2Wcs(capturedBoard.undistpoints,&cameraparam,wcspath,ccspath);
+    // //-----------------------------------------------------------
     //画像に写った投影画像の点についてWCSに変換したあとICSに再投影する
     //-----------------------------------------------------------
 
@@ -251,18 +214,7 @@ void Calibration::calibration()
     icspath = inputpath+"/calib_output/projected/3Dto2DCam/ICSprojectedUndist";
     wcspath = inputpath+"/calib_output/projected/3Dto2DCam/WCSprojected";
     vector<vector<cv::Point2f>> reprojectedWcs = transformWcs2Ics(capturedProjectedImage.wcspoints, &cameraparam, icspath, ccspath);
-    //変換がうまくいったか確認用
-//    cout << "drawPoint... go \"plot\" window and push any key" << endl;
-//    drawPoint(inputpath+"/calib_output/projected/projected",
-//              inputpath+"/calib_output/projected/3Dto2DCam/ICSUndist",
-//              capturedProjectedImage.undistpoints,
-//              BLUE
-//              );
-//    drawPoint(inputpath+"/calib_output/projected/3Dto2DCam/ICSUndist",
-//              inputpath+"/calib_output/projected/3Dto2DCam/ICSUndist",
-//              reprojectedWcs,
-//              YELLOW
-//              );
+
     //-----------------------------------------------------------
     //プロジェクタキャリブレーション
     //-----------------------------------------------------------
@@ -331,84 +283,14 @@ void Calibration::calibration()
     outfile1 << c2pt << endl;
     outfile1.close();
 
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-        capturedProjectedImage.ccspoints = transformWcs2Ccs(capturedProjectedImage.wcspoints, &cameraparam);
-        vector<vector<cv::Point2f>> rotatedpoints(1);
-        cv::Mat pcspoint;
-        cv::Mat picspoint;
-        cv::Point2f point;
-        cv::Mat ccspoint;
-
-        vector<vector<cv::Point2f>> translatedpoints(1);
-        cv::Mat bottomhm =  (cv::Mat_<double>(1,4) << 0,0,0,1);
-        cv::Mat sidehm = (cv::Mat_<double>(3,1) << 0,0,0);
-//        cv::Mat trans;
-//        cv::hconcat(c2pR,c2pt,trans);
-//        cv::vconcat(trans,bottomhm,trans);
-        cv::Mat t = (cv::Mat_<double>(3,1) << 0,50,0);
-        ofstream a("/Users/maru/Desktop/transp.txt");
-        for (j=0; j<PAT_SIZE; j++){
-            //WCS to CCS
-            ccspoint = cv::Mat(capturedProjectedImage.ccspoints[0][j]);
-            ccspoint.convertTo(ccspoint,CV_64F);
-            pcspoint = c2pR*ccspoint+c2pt+t;
-//            pcspoint = trans*ccspoint;
-            //CCS to ICS
-//            pcspoint = (cv::Mat_<double>(3,1) << pcspoint.at<double>(0,0),pcspoint.at<double>(1,0),pcspoint.at<double>(2,0));
-            picspoint = projectorparam.cam_mat * pcspoint;
-            picspoint = picspoint/picspoint.at<double>(2,0);
-            point.x = picspoint.at<double>(0,0);
-            point.y = picspoint.at<double>(1,0);
-            a << picspoint << endl;
-            translatedpoints[0].push_back(point);
-        }
-        a.close();
-
-        cout << "transformed corners plot" << endl;
-        drawPoint(inputpath+"/calib_output/projected/projected",
-                  "/Users/maru/Desktop/projected/PICS/translated/ICSUndist",
-                  translatedpoints,
-                  YELLOW
-                  );
-
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //--------------------------------------------
     //　パラメータをin0ファイルに保存
     //--------------------------------------------
-    double apertureW=22.3;
-    double apertureH=14.9;
-    double fovx=0;
-    double fovy=0;
-    double focalLength=0;
-    double aspectRatio=0;
-    cv::Point2d principalPoint;
-    cv::calibrationMatrixValues(cameraparam.cam_mat,capturedBoard.distim[0].size(),apertureW,apertureH,
-                                fovx,fovy,focalLength,principalPoint,aspectRatio);
-
-    string inpath = "./data/preprocess.in0";
-    QString in0 = QString::fromStdString(inpath);
-    QSettings param(in0, QSettings::IniFormat);
-    param.setValue(("Calibration/FocalLength"),focalLength);
-    param.setValue(("Calibration/VIEWANGLE_X"),fovx);
-    param.setValue(("Calibration/VIEWANGLE_Y"),fovy);
-//    param.setValue(("Calibration/SCREEN_X"),capturedBoard.distim[0].size().width);
-    param.setValue(("Calibration/SCREEN_X"),640);
-//    param.setValue(("Calibration/SCREEN_Y"),capturedBoard.distim[0].size().height);
-    param.setValue(("Calibration/SCREEN_Y"),480);
-
-    cv::Mat c2prvec = (cv::Mat_<double>(3,1));
-    cv::Rodrigues(c2pR,c2prvec);
-    param.setValue(("Calibration/CP_R0"), c2prvec.at<double>(0,0));
-    param.setValue(("Calibration/CP_R1"), c2prvec.at<double>(1,0));
-    param.setValue(("Calibration/CP_R2"), c2prvec.at<double>(2,0));
-    param.setValue(("Calibration/CP_T0"), c2pt.at<double>(0,0));
-    param.setValue(("Calibration/CP_T1"), c2pt.at<double>(1,0));
-    param.setValue(("Calibration/CP_T2"), c2pt.at<double>(2,0));
-    param.setValue(("Calibration/PROJECTOR_FX"), projectorparam.cam_mat.at<double>(0,0));
-    param.setValue(("Calibration/PROJECTOR_FY"), projectorparam.cam_mat.at<double>(1,1));
-    param.setValue(("Calibration/PROJECTOR_CX"), projectorparam.cam_mat.at<double>(0,2));
-    param.setValue(("Calibration/PROJECTOR_CY"), projectorparam.cam_mat.at<double>(1,2));
+    cout << "カメラ座標系からプロジェクタ座標系への変換(外部パラメータ)" << endl;
+    cout << "回転行列" << endl;
+    cout << c2pR << endl;
+    cout << "並進行列" << endl;
+    cout << c2pt << endl;
 
     cout << "Calibaration: all process ended !" << endl;
 }
@@ -876,9 +758,5 @@ void Calibration::calculateError(vector<vector<cv::Point2f>>data,vector<vector<c
         sum = 0;
         ofs.close();
     }
-}
-
-inline void Calibration::pm(int i){
-    cout << "where " << i << endl;
 }
 
