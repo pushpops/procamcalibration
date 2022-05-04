@@ -1,4 +1,4 @@
-# camprocalibration
+# procamcalibration
 camera-projector calibration
 
 The program estimates the internal parameters of the camera and the external parameters of the camera and the projector by inputting several images like the following.
